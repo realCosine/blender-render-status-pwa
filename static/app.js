@@ -25,7 +25,8 @@ async function setupPush(){
 function render(data){
   const jobs=(data.blender_jobs||[]).map(j=>{
     const progress=j.expected_frames?`${j.frame??0} / ${j.expected_frames} Frames`:"Startet …";
-    return `<article class="card"><div class="row"><strong>${esc(j.machine)} · ${esc(j.label)}</strong>${pill(j.running?"läuft":"angehalten",j.running?"ok":"wait")}</div><div class="value">${esc(progress)}</div></article>`;
+    const state=j.paused?"pausiert":j.running?"läuft":"angehalten";
+    return `<article class="card"><div class="row"><strong>${esc(j.machine)} · ${esc(j.label)}</strong>${pill(state,j.running?"ok":"wait")}</div><div class="value">${esc(progress)}</div></article>`;
   });
   $("jobs").innerHTML=jobs.length?jobs.join(""):`<article class="card"><strong>Kein aktiver Blender-Job</strong></article>`;
   $("updated").textContent=new Date(data.updated_at*1000).toLocaleTimeString("de-AT",{hour:"2-digit",minute:"2-digit",second:"2-digit"});$("refresh").textContent="Live";

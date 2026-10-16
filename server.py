@@ -197,6 +197,11 @@ def linux_blender_jobs() -> list[dict[str, object]]:
             os.kill(pid, 0)
         except OSError:
             continue
+        try:
+            proc_state = Path(f"/proc/{pid}/stat").read_text().split(") ", 1)[1][0]
+        except (FileNotFoundError, IndexError):
+            continue
+        paused = proc_state in {"T", "t"}
         viscosity = re.fullmatch(r"viscosity(\d+)(-stable)?-128-780", tag)
         if viscosity:
             amount = viscosity.group(1)
@@ -205,11 +210,11 @@ def linux_blender_jobs() -> list[dict[str, object]]:
             frame = frame_from_glob(
                 f"projects/06-viscosity-piston/output/{cache_name}/mesh/fluid_mesh_*.bobj.gz"
             )
-            jobs.append({"machine": "Linux", "label": f"{amount}% Viskosität · Bake", "running": True,
-                         "frame": frame, "expected_frames": 780, "pid": pid})
+            jobs.append({"machine": "Linux", "label": f"{amount}% Viskosität · Bake", "running": not paused,
+                         "paused": paused, "frame": frame, "expected_frames": 780, "pid": pid})
         else:
-            jobs.append({"machine": "Linux", "label": tag.replace("-", " "), "running": True,
-                         "frame": None, "expected_frames": None, "pid": pid})
+            jobs.append({"machine": "Linux", "label": tag.replace("-", " "), "running": not paused,
+                         "paused": paused, "frame": None, "expected_frames": None, "pid": pid})
     return jobs
 
 
