@@ -30,6 +30,8 @@ WINDOWS_REPORT = STATE / "windows-report.json"
 WINDOWS_TOKEN = STATE / "windows-token"
 WINDOWS_HOST = os.environ.get("RENDER_STATUS_WINDOWS_SSH", "")
 WINDOWS_RENDER = os.environ.get("RENDER_STATUS_WINDOWS_RENDER_DIR", "")
+WINDOWS_TASK = os.environ.get("RENDER_STATUS_WINDOWS_TASK", "Piston0RenderResume")
+WINDOWS_LABEL = os.environ.get("RENDER_STATUS_WINDOWS_LABEL", "Windows · Render")
 VAPID_SUBJECT = os.environ.get("RENDER_STATUS_VAPID_SUBJECT", "mailto:render-status@localhost")
 PUSH_SUBSCRIPTIONS = STATE / "push-subscriptions.json"
 PUSH_STATE = STATE / "push-state.json"
@@ -216,7 +218,7 @@ def windows_blender_job() -> dict[str, object] | None:
     command = (
         "$r='" + WINDOWS_RENDER + "'; "
         "$f=Get-ChildItem $r -File -Filter '*.png' | Sort-Object Name; "
-        "$task=Get-ScheduledTaskInfo -TaskName 'Piston0RenderResume' -ErrorAction SilentlyContinue; "
+        "$task=Get-ScheduledTaskInfo -TaskName '" + WINDOWS_TASK.replace("'", "") + "' -ErrorAction SilentlyContinue; "
         "$run=($null -ne $task -and $task.LastTaskResult -eq 267009); "
         "Write-Output (\"$($f.Count)|$run\")"
     )
@@ -226,7 +228,7 @@ def windows_blender_job() -> dict[str, object] | None:
     match = re.search(r"(\d+)\|(True|False)", raw, re.IGNORECASE)
     if not match:
         return None
-    return {"machine": "Windows", "label": "0% Flüssigkeit · Render",
+    return {"machine": "Windows", "label": WINDOWS_LABEL,
             "running": match.group(2).lower() == "true", "frame": int(match.group(1)),
             "expected_frames": 780}
 
