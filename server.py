@@ -218,8 +218,10 @@ def windows_blender_job() -> dict[str, object] | None:
     command = (
         "$r='" + WINDOWS_RENDER + "'; "
         "$f=Get-ChildItem $r -File -Filter '*.png' | Sort-Object Name; "
-        "$task=Get-ScheduledTaskInfo -TaskName '" + WINDOWS_TASK.replace("'", "") + "' -ErrorAction SilentlyContinue; "
-        "$run=($null -ne $task -and $task.LastTaskResult -eq 267009); "
+        # The scheduled task can report a launcher exit even while its
+        # detached Blender child is still rendering. Track that real process.
+        "$blender=Get-CimInstance Win32_Process -Filter \"Name='blender.exe'\" -ErrorAction SilentlyContinue; "
+        "$run=(($blender | Measure-Object).Count -gt 0 -and $f.Count -lt 780); "
         "Write-Output (\"$($f.Count)|$run\")"
     )
     encoded = base64.b64encode(command.encode("utf-16le")).decode()
