@@ -1,0 +1,14 @@
+[Unit]
+Description=Render Status PWA
+After=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.config/render-status-pwa.env
+WorkingDirectory=/home/fritz/dev/youtube-shorts-worktrees/main2
+ExecStart=/usr/bin/python3 /home/fritz/dev/youtube-shorts-worktrees/main2/apps/render-status-pwa/server.py
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=default.target

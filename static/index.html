@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#0b0c10">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="stylesheet" href="/styles.css">
+  <title>Render Status</title>
+</head>
+<body>
+  <div id="loading" class="loading" aria-live="polite"><div class="orb"><i></i><i></i><i></i></div><strong>Render-Status wird geladen</strong></div>
+  <header><div><p class="eyebrow">WORKSTATION</p><h1>Blender Status</h1></div><div class="header-actions"><button id="push-toggle" class="toggle" type="button" role="switch" aria-checked="false"><span></span>Push</button><div id="refresh" class="muted">Lädt …</div></div></header>
+  <main>
+    <section><h2>Aktive Bakes & Render</h2><div id="jobs" class="stack"></div></section>
+    <p class="foot">Nur aktive Blender-Jobs · Aktualisiert alle 15 Sekunden · Stand <span id="updated">—</span></p>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>
