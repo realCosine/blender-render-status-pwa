@@ -197,11 +197,13 @@ def linux_blender_jobs() -> list[dict[str, object]]:
             os.kill(pid, 0)
         except OSError:
             continue
-        viscosity = re.fullmatch(r"viscosity(\d+)-128-780", tag)
+        viscosity = re.fullmatch(r"viscosity(\d+)(-stable)?-128-780", tag)
         if viscosity:
             amount = viscosity.group(1)
+            stable = bool(viscosity.group(2))
+            cache_name = f"lookdev-exact-viscosity{amount}{'-stable' if stable else ''}-final60-cache"
             frame = frame_from_glob(
-                f"projects/06-viscosity-piston/output/lookdev-exact-viscosity{amount}-final60-cache/mesh/fluid_mesh_*.bobj.gz"
+                f"projects/06-viscosity-piston/output/{cache_name}/mesh/fluid_mesh_*.bobj.gz"
             )
             jobs.append({"machine": "Linux", "label": f"{amount}% Viskosität · Bake", "running": True,
                          "frame": frame, "expected_frames": 780, "pid": pid})
