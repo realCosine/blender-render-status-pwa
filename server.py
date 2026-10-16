@@ -318,7 +318,10 @@ def sheepit_projects(force: bool = False) -> list[dict[str, object]]:
 def status() -> dict[str, object]:
     jobs = linux_blender_jobs()
     windows_job = windows_blender_job()
-    if windows_job:
+    # The dashboard is intentionally a live queue, not a render history.
+    # A completed Windows render has all frames present but must disappear
+    # rather than remain on screen as "paused".
+    if windows_job and windows_job["running"]:
         jobs.append(windows_job)
     return {
         "updated_at": int(time.time()),
