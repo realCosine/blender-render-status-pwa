@@ -212,6 +212,30 @@ def linux_blender_jobs() -> list[dict[str, object]]:
             )
             jobs.append({"machine": "Linux", "label": f"{amount}% Viskosität · Bake", "running": not paused,
                          "paused": paused, "frame": frame, "expected_frames": 780, "pid": pid})
+        elif tag == "viscosity50-smooth-release-v4-final":
+            frame = frame_from_glob(
+                "projects/06-viscosity-piston/output/"
+                "lookdev-exact-viscosity50-smooth-release-v4-final-cache/"
+                "config/config_*.uni"
+            )
+            jobs.append({"machine": "Linux", "label": "50% Viskosität · Bake", "running": not paused,
+                         "paused": paused, "frame": frame, "expected_frames": 780, "pid": pid})
+        elif tag == "viscosity50-detach-v5-final":
+            frame = frame_from_glob(
+                "projects/06-viscosity-piston/output/"
+                "lookdev-exact-viscosity50-detach-v5-final-cache/"
+                "config/config_*.uni"
+            )
+            jobs.append({"machine": "Linux", "label": "50% Viskosität · Bake", "running": not paused,
+                         "paused": paused, "frame": frame, "expected_frames": 780, "pid": pid})
+        elif tag == "viscosity100-shatter-hq-probe":
+            frame = frame_from_glob(
+                "projects/06-viscosity-piston/output/"
+                "lookdev-exact-viscosity100-shatter-hq-probe-cache/"
+                "config/config_*.uni"
+            )
+            jobs.append({"machine": "Linux", "label": "100% Viskosität · Bruchtest", "running": not paused,
+                         "paused": paused, "frame": frame, "expected_frames": 300, "pid": pid})
         else:
             jobs.append({"machine": "Linux", "label": tag.replace("-", " "), "running": not paused,
                          "paused": paused, "frame": None, "expected_frames": None, "pid": pid})
@@ -242,12 +266,73 @@ def windows_blender_job() -> dict[str, object] | None:
             "expected_frames": 780}
 
 
+def windows_75pct_bake_job() -> dict[str, object] | None:
+    """Track the approved 75% Mantaflow test cache on the Windows machine."""
+    if not WINDOWS_HOST:
+        return None
+    command = (
+        "$v3='E:\\youtube-shorts\\projects\\06-viscosity-piston\\output\\"
+        "lookdev-exact-viscosity75-detach-thick-v3-cache'; "
+        "$v2='E:\\youtube-shorts\\projects\\06-viscosity-piston\\output\\"
+        "lookdev-exact-viscosity75-windows-v2-cache'; "
+        "$old='E:\\youtube-shorts\\projects\\06-viscosity-piston\\output\\"
+        "lookdev-exact-viscosity75-windows-short-cache'; "
+        "$useV3=Test-Path $v3; "
+        "$r=if($useV3){$v3}elseif(Test-Path $v2){$v2}else{$old}; "
+        "$f=Get-ChildItem $r -Recurse -File -Filter 'config_*.uni' -ErrorAction SilentlyContinue; "
+        "$blender=Get-CimInstance Win32_Process -Filter \"Name='blender.exe'\" -ErrorAction SilentlyContinue; "
+        "$expected=if($useV3){320}else{615}; "
+        "$run=(($blender | Measure-Object).Count -gt 0 -and $f.Count -lt $expected); "
+        "Write-Output (\"$($f.Count)|$run|$expected\")"
+    )
+    encoded = base64.b64encode(command.encode("utf-16le")).decode()
+    raw = run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", WINDOWS_HOST,
+               "powershell", "-NoProfile", "-EncodedCommand", encoded], timeout=10)
+    match = re.search(r"(\d+)\|(True|False)\|(\d+)", raw, re.IGNORECASE)
+    if not match:
+        return None
+    return {"machine": "Windows", "label": "75% Viskosität · Bake",
+            "running": match.group(2).lower() == "true", "frame": int(match.group(1)),
+            "expected_frames": int(match.group(3))}
+
+
+def windows_75pct_preview_job() -> dict[str, object] | None:
+    """Track the Workbench preview independently from its completed bake."""
+    if not WINDOWS_HOST:
+        return None
+    command = (
+        "$r='E:\\youtube-shorts\\projects\\06-viscosity-piston\\output\\"
+        "viscosity75-windows-v2-preview-frames'; "
+        "$f=Get-ChildItem $r -File -Filter '*.png' -ErrorAction SilentlyContinue; "
+        "$blender=Get-CimInstance Win32_Process -Filter \"Name='blender.exe'\" -ErrorAction SilentlyContinue; "
+        "$run=(($blender | Measure-Object).Count -gt 0 -and $f.Count -lt 615); "
+        "Write-Output (\"$($f.Count)|$run\")"
+    )
+    encoded = base64.b64encode(command.encode("utf-16le")).decode()
+    raw = run(["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=5", WINDOWS_HOST,
+               "powershell", "-NoProfile", "-EncodedCommand", encoded], timeout=10)
+    match = re.search(r"(\d+)\|(True|False)", raw, re.IGNORECASE)
+    if not match:
+        return None
+    return {"machine": "Windows", "label": "75% Viskosität · Preview",
+            "running": match.group(2).lower() == "true", "frame": int(match.group(1)),
+            "expected_frames": 615}
+
+
 def active_job_snapshot() -> tuple[dict[str, dict[str, object]], set[str]]:
     jobs = linux_blender_jobs()
     probed = {"Linux"}
     windows_job = windows_blender_job()
     if windows_job is not None:
         jobs.append(windows_job)
+        probed.add("Windows")
+    windows_75_job = windows_75pct_bake_job()
+    if windows_75_job is not None:
+        jobs.append(windows_75_job)
+        probed.add("Windows")
+    windows_75_preview = windows_75pct_preview_job()
+    if windows_75_preview is not None:
+        jobs.append(windows_75_preview)
         probed.add("Windows")
     return {f"{job['machine']}|{job['label']}": job for job in jobs if job["running"]}, probed
 
@@ -334,6 +419,9 @@ def status() -> dict[str, object]:
     # rather than remain on screen as "paused".
     if windows_job and windows_job["running"]:
         jobs.append(windows_job)
+    windows_75_job = windows_75pct_bake_job()
+    if windows_75_job and windows_75_job["running"]:
+        jobs.append(windows_75_job)
     return {
         "updated_at": int(time.time()),
         "blender_jobs": jobs,
