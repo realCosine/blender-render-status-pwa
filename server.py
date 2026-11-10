@@ -251,7 +251,7 @@ def linux_blender_jobs() -> list[dict[str, object]]:
             continue
         frame = frame_from_glob(
             "projects/06-viscosity-piston/output/"
-            "viscosity100-cell-fracture-dense-v2-test-frames/frame_*.png"
+            "viscosity100-cell-fracture-dense-v*-test-frames/frame_*.png"
         )
         jobs.append({"machine": "Linux", "label": "100% Viskosität · Echtbruchtest",
                      "running": True, "paused": False, "frame": frame,
