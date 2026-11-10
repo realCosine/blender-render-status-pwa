@@ -188,7 +188,7 @@ def process_elapsed_seconds(pid: int) -> int | None:
 
 
 def linux_blender_jobs() -> list[dict[str, object]]:
-    """Only show Blender jobs launched through the local job runner."""
+    """Show managed Blender jobs plus the approved dense 100% fracture test."""
     raw = run([str(ROOT / "tools/blender-run.sh"), "list"], timeout=5)
     jobs = []
     for tag, pid_text in re.findall(r"^(\S+)\s+pid=(\d+)\s+running$", raw, re.MULTILINE):
@@ -239,6 +239,23 @@ def linux_blender_jobs() -> list[dict[str, object]]:
         else:
             jobs.append({"machine": "Linux", "label": tag.replace("-", " "), "running": not paused,
                          "paused": paused, "frame": None, "expected_frames": None, "pid": pid})
+
+    # The dense 100% proof is intentionally run through heavy-job (it is a
+    # short Cell-Fracture/render pipeline rather than a Mantaflow cache).  It
+    # still belongs on the dashboard while active.
+    tracked_pids = {str(job["pid"]) for job in jobs}
+    for row in process_rows():
+        if row["pid"] in tracked_pids:
+            continue
+        if "test_100pct_cell_fracture_dense_rigidbody.py" not in row["command"]:
+            continue
+        frame = frame_from_glob(
+            "projects/06-viscosity-piston/output/"
+            "viscosity100-cell-fracture-dense-v2-test-frames/frame_*.png"
+        )
+        jobs.append({"machine": "Linux", "label": "100% Viskosität · Echtbruchtest",
+                     "running": True, "paused": False, "frame": frame,
+                     "expected_frames": 100, "pid": int(row["pid"])})
     return jobs
 
 
