@@ -236,6 +236,13 @@ def linux_blender_jobs() -> list[dict[str, object]]:
             )
             jobs.append({"machine": "Linux", "label": "100% Viskosität · Bruchtest", "running": not paused,
                          "paused": paused, "frame": frame, "expected_frames": 300, "pid": pid})
+        elif re.fullmatch(r"viscosity100-cell-fracture-v\d+", tag):
+            frame = frame_from_glob(
+                "projects/06-viscosity-piston/output/"
+                "viscosity100-cell-fracture-dense-v14-test-frames/frame_*.png"
+            )
+            jobs.append({"machine": "Linux", "label": "100% Viskosität · Echtbruchtest", "running": not paused,
+                         "paused": paused, "frame": frame, "expected_frames": 75, "pid": pid})
         else:
             jobs.append({"machine": "Linux", "label": tag.replace("-", " "), "running": not paused,
                          "paused": paused, "frame": None, "expected_frames": None, "pid": pid})
